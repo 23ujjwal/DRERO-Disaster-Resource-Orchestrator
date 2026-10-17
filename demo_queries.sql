@@ -7,7 +7,7 @@ USE drero_db;
 -- ─────────────────────────────────────────────────────────────
 -- 1. INNER JOIN — requests with their disaster and zone
 -- ─────────────────────────────────────────────────────────────
-SELECT '=== INNER JOIN: requests with disaster and zone ===' AS demo; -- request what demo is doi
+SELECT '=== INNER JOIN: requests with disaster and zone ===' AS demo; -- request what demo is 
 SELECT
     rr.public_ref,
     rr.victim_name,
