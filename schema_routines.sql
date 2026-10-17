@@ -442,6 +442,6 @@ BEGIN
             COMMIT;
             SET p_result = CONCAT('OK: ', v_old_status, ' -> ', p_new_status);
         END IF;
-    END IF;
+    END IF;--system call
 END$$
 DELIMITER ;
