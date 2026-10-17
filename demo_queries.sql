@@ -14,7 +14,7 @@ SELECT
     rr.people_affected,
     rr.severity_snapshot,
     d.disaster_name,
-    z.zone_name,--zone names
+    z.zone_name,
     rr.status
 FROM rescue_requests rr
 INNER JOIN disasters d ON d.disaster_id = rr.disaster_id
