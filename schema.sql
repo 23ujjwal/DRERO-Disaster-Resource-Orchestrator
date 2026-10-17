@@ -3,7 +3,7 @@
 -- MySQL 8.4 compatible
 -- Safe to re-run: drops and recreates everything.
 
-SET FOREIGN_KEY_CHECKS = 0;-- schema in sql is a pattern or the araangement of the
+SET FOREIGN_KEY_CHECKS = 0;-- schema in sql is a pattern or the araangement of t
 
 DROP VIEW IF EXISTS pending_rescue_requests;
 DROP VIEW IF EXISTS available_resources_summary;
