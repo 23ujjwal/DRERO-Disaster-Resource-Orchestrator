@@ -13,7 +13,7 @@ SELECT
     rr.victim_name,
     rr.people_affected,
     rr.severity_snapshot,
-    d.disaster_name,--teri syetm bjai jayegi m
+    d.disaster_name,--teri syetm bjai jayegi 
     z.zone_name,
     rr.status
 FROM rescue_requests rr
