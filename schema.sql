@@ -36,7 +36,7 @@ DROP TABLE IF EXISTS localities;
 DROP TABLE IF EXISTS zones;
 DROP TABLE IF EXISTS cities;
 
-SET FOREIGN_KEY_CHECKS = 1;--setting foreign key
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ─────────────────────────────────────────────
 -- Table 1: cities
