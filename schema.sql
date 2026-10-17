@@ -3,7 +3,7 @@
 -- MySQL 8.4 compatible
 -- Safe to re-run: drops and recreates everything.
 
-SET FOREIGN_KEY_CHECKS = 0;-- schem 
+SET FOREIGN_KEY_CHECKS = 0;-- sche
 
 DROP VIEW IF EXISTS pending_rescue_requests;
 DROP VIEW IF EXISTS available_resources_summary;
