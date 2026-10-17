@@ -23,7 +23,7 @@ USE drero_db;
 -- ============================================================
 
 -- Automatically records every rescue request status change in history
-DROP TRIGGER IF EXISTS record_request_status_change;--syetem
+DROP TRIGGER IF EXISTS record_request_status_change;
 DELIMITER $$
 CREATE TRIGGER record_request_status_change
 AFTER UPDATE ON rescue_requests
