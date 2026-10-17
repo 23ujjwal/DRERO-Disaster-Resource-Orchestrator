@@ -3,7 +3,7 @@
 -- Every table must have >= 10 rows after seed.sql is applied.
 -- Run as: mysql -h <host> -u drero_app -p drero_db < verify.sql
 
-SELECT '=== TABLE ROW COUNTS ===' AS info;-- system hang being state of art is really 
+SELECT '=== TABLE ROW COUNTS ===' AS info;-- system hang being state of art is reall
 
 SELECT tbl, cnt,
        CASE WHEN cnt >= 10 THEN 'OK (>=10)'
