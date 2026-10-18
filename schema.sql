@@ -1,8 +1,3 @@
--- DRERO: Disaster Resource Orchestrator
--- schema.sql — DDL for all 17 main tables + views (human-readable names)
--- MySQL 8.4 compatible
--- Safe to re-run: drops and recreates everything.
-
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP VIEW IF EXISTS pending_rescue_requests;
@@ -11,7 +6,6 @@ DROP VIEW IF EXISTS allocation_details;
 DROP VIEW IF EXISTS scheduling_performance_summary;
 DROP VIEW IF EXISTS audit_activity_report;
 
--- legacy view names (drop if old schema was applied)
 DROP VIEW IF EXISTS v_pending_requests;
 DROP VIEW IF EXISTS v_available_resources;
 DROP VIEW IF EXISTS v_allocation_details;
@@ -38,10 +32,6 @@ DROP TABLE IF EXISTS cities;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ─────────────────────────────────────────────
--- Table 1: cities
--- Stores supported cities where disasters can occur.
--- ─────────────────────────────────────────────
 CREATE TABLE cities (
     city_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     city_name    VARCHAR(100) NOT NULL,
@@ -53,10 +43,6 @@ CREATE TABLE cities (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Supported cities for disaster operations';
 
--- ─────────────────────────────────────────────
--- Table 2: zones
--- Divides each city into administrative response zones.
--- ─────────────────────────────────────────────
 CREATE TABLE zones (
     zone_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     city_id      INT UNSIGNED NOT NULL,
@@ -68,10 +54,6 @@ CREATE TABLE zones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Response zones within a city';
 
--- ─────────────────────────────────────────────
--- Table 3: localities
--- Neighbourhoods, sectors, colonies mapped to zones.
--- ─────────────────────────────────────────────
 CREATE TABLE localities (
     locality_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     zone_id       INT UNSIGNED NOT NULL,
@@ -86,10 +68,6 @@ CREATE TABLE localities (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Localities (colonies/sectors) mapped to zones';
 
--- ─────────────────────────────────────────────
--- Table 4: disasters
--- Records disaster events (floods, cyclones, earthquakes).
--- ─────────────────────────────────────────────
 CREATE TABLE disasters (
     disaster_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     disaster_name VARCHAR(150) NOT NULL,
@@ -104,11 +82,6 @@ CREATE TABLE disasters (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Disaster events; each can affect multiple zones';
 
--- ─────────────────────────────────────────────
--- Table 5: disaster_zone_status
--- Severity level for a zone during a specific disaster.
--- Composite PK ensures one severity per (disaster, zone).
--- ─────────────────────────────────────────────
 CREATE TABLE disaster_zone_status (
     disaster_id      INT UNSIGNED NOT NULL,
     zone_id          INT UNSIGNED NOT NULL,
@@ -122,9 +95,6 @@ CREATE TABLE disaster_zone_status (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Severity of each zone for each disaster event';
 
--- ─────────────────────────────────────────────
--- Table 6: users  (staff accounts only)
--- ─────────────────────────────────────────────
 CREATE TABLE users (
     user_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username      VARCHAR(60)  NOT NULL UNIQUE,
@@ -139,7 +109,7 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Staff accounts: DISPATCHER, ZONE_ADMIN, AUDITOR';
 
--- Add FK back-references now that users table exists
+
 ALTER TABLE disasters
     ADD CONSTRAINT fk_disaster_created_by
     FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
@@ -148,10 +118,7 @@ ALTER TABLE disaster_zone_status
     ADD CONSTRAINT fk_dzs_updated_by
     FOREIGN KEY (updated_by) REFERENCES users(user_id) ON DELETE SET NULL;
 
--- ─────────────────────────────────────────────
--- Table 7: assistance_types
--- Categories of help that can be requested (boat, medical, etc.).
--- ─────────────────────────────────────────────
+
 CREATE TABLE assistance_types (
     assistance_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     type_name          VARCHAR(100) NOT NULL UNIQUE,
@@ -161,11 +128,6 @@ CREATE TABLE assistance_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Types of rescue/relief assistance available';
 
--- ─────────────────────────────────────────────
--- Table 8: rescue_requests
--- Core table: each row is one public or staff-created rescue request.
--- Also acts as a simulated OS Process Control Block.
--- ─────────────────────────────────────────────
 CREATE TABLE rescue_requests (
     request_id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     public_ref         VARCHAR(20)  NOT NULL UNIQUE,
@@ -199,10 +161,7 @@ CREATE TABLE rescue_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Rescue requests; each request is a simulated OS process';
 
--- ─────────────────────────────────────────────
--- Table 9: request_status_history
--- Full audit trail of every status change on a request.
--- ─────────────────────────────────────────────
+
 CREATE TABLE request_status_history (
     history_id  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id  INT UNSIGNED NOT NULL,
@@ -217,10 +176,6 @@ CREATE TABLE request_status_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Every status change ever made on a rescue request';
 
--- ─────────────────────────────────────────────
--- Table 10: resource_types
--- Categories of physical resources (boat, truck, etc.).
--- ─────────────────────────────────────────────
 CREATE TABLE resource_types (
     resource_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     type_name        VARCHAR(100) NOT NULL UNIQUE,
@@ -229,10 +184,6 @@ CREATE TABLE resource_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Categories of rescue resources';
 
--- ─────────────────────────────────────────────
--- Table 11: resources
--- Individual resources and their current availability.
--- ─────────────────────────────────────────────
 CREATE TABLE resources (
     resource_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     resource_name    VARCHAR(100) NOT NULL,
@@ -254,10 +205,6 @@ CREATE TABLE resources (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Individual rescue resources (boats, trucks, medical teams, etc.)';
 
--- ─────────────────────────────────────────────
--- Table 12: allocations
--- Tracks which resource was assigned to which request.
--- ─────────────────────────────────────────────
 CREATE TABLE allocations (
     allocation_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id    INT UNSIGNED NOT NULL,
@@ -276,10 +223,6 @@ CREATE TABLE allocations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Resource-to-request assignments; active allocations prevent double booking';
 
--- ─────────────────────────────────────────────
--- Table 13: resource_status_history
--- Records every availability change for a resource.
--- ─────────────────────────────────────────────
 CREATE TABLE resource_status_history (
     history_id  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     resource_id INT UNSIGNED NOT NULL,
@@ -294,10 +237,7 @@ CREATE TABLE resource_status_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Full history of resource status changes';
 
--- ─────────────────────────────────────────────
--- Table 14: scheduling_runs
--- Records each execution of a scheduling algorithm.
--- ─────────────────────────────────────────────
+
 CREATE TABLE scheduling_runs (
     run_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     algorithm    ENUM('FCFS','SJF','RR','PRIORITY') NOT NULL,
@@ -311,9 +251,6 @@ CREATE TABLE scheduling_runs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Each run of a scheduling algorithm; stores which algorithm, when, by whom';
 
--- ─────────────────────────────────────────────
--- Table 15: scheduling_log
--- Per-request results for each scheduling run.
 -- ─────────────────────────────────────────────
 CREATE TABLE scheduling_log (
     log_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -332,10 +269,6 @@ CREATE TABLE scheduling_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Per-request scheduling results: waiting time, turnaround, response time';
 
--- ─────────────────────────────────────────────
--- Table 16: audit_log
--- Immutable record of all important system actions.
--- ─────────────────────────────────────────────
 CREATE TABLE audit_log (
     audit_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id     INT UNSIGNED DEFAULT NULL,
@@ -350,10 +283,6 @@ CREATE TABLE audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='System-wide audit trail; records who did what and when';
 
--- ─────────────────────────────────────────────
--- Table 17: deadlock_events
--- Records simulated RAG cycle detections and resolutions.
--- ─────────────────────────────────────────────
 CREATE TABLE deadlock_events (
     event_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     detected_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -364,11 +293,9 @@ CREATE TABLE deadlock_events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Simulated deadlock events detected by RAG DFS; distinct from MySQL deadlocks';
 
--- ═══════════════════════════════════════════════════════════════
--- VIEWS — human-readable names describing what each view shows
--- ═══════════════════════════════════════════════════════════════
 
--- Shows all rescue requests that are still waiting to be processed
+
+
 CREATE OR REPLACE VIEW pending_rescue_requests AS
 SELECT
     rr.request_id,
