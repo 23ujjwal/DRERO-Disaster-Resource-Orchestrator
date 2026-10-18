@@ -3,7 +3,7 @@
 -- All passwords: Demo@1234 (stored plain for academic demo — documented).
 -- All data is SIMULATED for academic demonstration only.
 
-SET FOREIGN_KEY_CHECKS = 0; 
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- ─── cities (10) ─────────────────────────────────────────────
 INSERT IGNORE INTO cities (city_id, city_name, state_name, country, is_active) VALUES
@@ -80,19 +80,20 @@ INSERT IGNORE INTO users (user_id, username, password_hash, full_name, role, zon
 (10, 'auditor3',    'Demo@1234', 'Sanjay Kumar',     'AUDITOR',    NULL, 1);
 
 -- ─── disaster_zone_status (12) ───────────────────────────────
-INSERT IGNORE INTO disaster_zone_status (disaster_id, zone_id, severity_level, risk_description, updated_by) VALUES
-(1, 1, 4, 'Severe flooding in northern suburbs',          1),
-(1, 2, 3, 'Moderate flooding in coastal areas',           1),
-(1, 3, 5, 'Critical flooding in low-lying areas',         1),
-(2, 4, 5, 'Direct cyclone impact zone',                   2),
-(2, 5, 4, 'High wind and rain damage',                    2),
-(3, 6, 3, 'Moderate river overflow',                      1),
-(3, 7, 2, 'Low-level flooding Howrah',                    1),
-(4, 8, 3, 'Simulated seismic zone risk',                  2),
-(5, 9, 4, 'Landslide risk in hilly terrain',              1),
-(7,11, 5, 'Critical Ganga flood zone',                    2),
-(8,12, 3, 'Moderate Tapi river overflow',                 1),
-(9, 1, 2, 'Low risk secondary zone',                      1);
+INSERT IGNORE INTO disaster_zone_status
+  (disaster_id, zone_id, severity_level, risk_level, risk_description, updated_by) VALUES
+(1, 1, 4, 4, 'Severe flooding in northern suburbs',          1),
+(1, 2, 3, 3, 'Moderate flooding in coastal areas',           1),
+(1, 3, 5, 5, 'Critical flooding in low-lying areas',         1),
+(2, 4, 5, 5, 'Direct cyclone impact zone',                   2),
+(2, 5, 4, 4, 'High wind and rain damage',                    2),
+(3, 6, 3, 3, 'Moderate river overflow',                      1),
+(3, 7, 2, 2, 'Low-level flooding Howrah',                    1),
+(4, 8, 3, 3, 'Simulated seismic zone risk',                  2),
+(5, 9, 4, 4, 'Landslide risk in hilly terrain',              1),
+(7,11, 5, 5, 'Critical Ganga flood zone',                    2),
+(8,12, 3, 3, 'Moderate Tapi river overflow',                 1),
+(9, 1, 2, 2, 'Low risk secondary zone',                      1);
 
 -- ─── assistance_types (10) ───────────────────────────────────
 INSERT IGNORE INTO assistance_types (assistance_type_id, type_name, description, is_active) VALUES
@@ -135,7 +136,8 @@ VALUES
 (9,  'Relief Kit S-01',      4,  1,  50, 'kits',     'Available',   'Emergency relief package set',   1),
 (10, 'Relief Kit S-02',      4,  4,  50, 'kits',     'Available',   'Chennai relief package set',     2),
 (11, 'Boat B-04',            1,  6,  12, 'people',   'Available',   'Kolkata East rescue boat',       3),
-(12, 'Medical Team M-03',    2,  8,   4, 'patients', 'Available',   'Bhubaneswar mobile medics',      4);
+(12, 'Medical Team M-03',    2,  8,   4, 'patients', 'Available',   'Bhubaneswar mobile medics',      4),
+(13, 'Patna Rescue Boat P-01',1, 11,  20, 'people',   'Available',   'SDRF motorboat Patna Ganga',      1);
 
 -- ─── rescue_requests (12) ────────────────────────────────────
 INSERT IGNORE INTO rescue_requests
