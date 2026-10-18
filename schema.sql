@@ -1,3 +1,8 @@
+-- DRERO: Disaster Resource Orchestrator
+-- schema.sql — DDL for all 17 main tables + views (human-readable names)
+-- MySQL 8.4 compatible
+-- Safe to re-run: drops and recreates everything.
+
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP VIEW IF EXISTS pending_rescue_requests;
@@ -6,6 +11,7 @@ DROP VIEW IF EXISTS allocation_details;
 DROP VIEW IF EXISTS scheduling_performance_summary;
 DROP VIEW IF EXISTS audit_activity_report;
 
+-- legacy view names (drop if old schema was applied)
 DROP VIEW IF EXISTS v_pending_requests;
 DROP VIEW IF EXISTS v_available_resources;
 DROP VIEW IF EXISTS v_allocation_details;
@@ -32,6 +38,10 @@ DROP TABLE IF EXISTS cities;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
+-- ─────────────────────────────────────────────
+-- Table 1: cities
+-- Stores supported cities where disasters can occur.
+-- ─────────────────────────────────────────────
 CREATE TABLE cities (
     city_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     city_name    VARCHAR(100) NOT NULL,
@@ -43,6 +53,10 @@ CREATE TABLE cities (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Supported cities for disaster operations';
 
+-- ─────────────────────────────────────────────
+-- Table 2: zones
+-- Divides each city into administrative response zones.
+-- ─────────────────────────────────────────────
 CREATE TABLE zones (
     zone_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     city_id      INT UNSIGNED NOT NULL,
@@ -54,6 +68,10 @@ CREATE TABLE zones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Response zones within a city';
 
+-- ─────────────────────────────────────────────
+-- Table 3: localities
+-- Neighbourhoods, sectors, colonies mapped to zones.
+-- ─────────────────────────────────────────────
 CREATE TABLE localities (
     locality_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     zone_id       INT UNSIGNED NOT NULL,
@@ -68,6 +86,10 @@ CREATE TABLE localities (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Localities (colonies/sectors) mapped to zones';
 
+-- ─────────────────────────────────────────────
+-- Table 4: disasters
+-- Records disaster events (floods, cyclones, earthquakes).
+-- ─────────────────────────────────────────────
 CREATE TABLE disasters (
     disaster_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     disaster_name VARCHAR(150) NOT NULL,
@@ -82,10 +104,16 @@ CREATE TABLE disasters (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Disaster events; each can affect multiple zones';
 
+-- ─────────────────────────────────────────────
+-- Table 5: disaster_zone_status
+-- Severity and independent risk level for a zone during a specific disaster.
+-- Composite PK ensures one status record per (disaster, zone).
+-- ─────────────────────────────────────────────
 CREATE TABLE disaster_zone_status (
     disaster_id      INT UNSIGNED NOT NULL,
     zone_id          INT UNSIGNED NOT NULL,
     severity_level   TINYINT      NOT NULL CHECK (severity_level BETWEEN 1 AND 5),
+    risk_level       TINYINT UNSIGNED NOT NULL DEFAULT 1 CHECK (risk_level BETWEEN 1 AND 5),
     risk_description VARCHAR(255) DEFAULT NULL,
     updated_by       INT UNSIGNED DEFAULT NULL,
     updated_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -93,8 +121,11 @@ CREATE TABLE disaster_zone_status (
     FOREIGN KEY fk_dzs_disaster (disaster_id) REFERENCES disasters(disaster_id) ON DELETE CASCADE,
     FOREIGN KEY fk_dzs_zone     (zone_id)     REFERENCES zones(zone_id)         ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  COMMENT='Severity of each zone for each disaster event';
+  COMMENT='Severity and independent risk of each zone for each disaster event';
 
+-- ─────────────────────────────────────────────
+-- Table 6: users  (staff accounts only)
+-- ─────────────────────────────────────────────
 CREATE TABLE users (
     user_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username      VARCHAR(60)  NOT NULL UNIQUE,
@@ -109,7 +140,7 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Staff accounts: DISPATCHER, ZONE_ADMIN, AUDITOR';
 
-
+-- Add FK back-references now that users table exists
 ALTER TABLE disasters
     ADD CONSTRAINT fk_disaster_created_by
     FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
@@ -118,7 +149,10 @@ ALTER TABLE disaster_zone_status
     ADD CONSTRAINT fk_dzs_updated_by
     FOREIGN KEY (updated_by) REFERENCES users(user_id) ON DELETE SET NULL;
 
-
+-- ─────────────────────────────────────────────
+-- Table 7: assistance_types
+-- Categories of help that can be requested (boat, medical, etc.).
+-- ─────────────────────────────────────────────
 CREATE TABLE assistance_types (
     assistance_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     type_name          VARCHAR(100) NOT NULL UNIQUE,
@@ -128,6 +162,11 @@ CREATE TABLE assistance_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Types of rescue/relief assistance available';
 
+-- ─────────────────────────────────────────────
+-- Table 8: rescue_requests
+-- Core table: each row is one public or staff-created rescue request.
+-- Also acts as a simulated OS Process Control Block.
+-- ─────────────────────────────────────────────
 CREATE TABLE rescue_requests (
     request_id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     public_ref         VARCHAR(20)  NOT NULL UNIQUE,
@@ -161,7 +200,10 @@ CREATE TABLE rescue_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Rescue requests; each request is a simulated OS process';
 
-
+-- ─────────────────────────────────────────────
+-- Table 9: request_status_history
+-- Full audit trail of every status change on a request.
+-- ─────────────────────────────────────────────
 CREATE TABLE request_status_history (
     history_id  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id  INT UNSIGNED NOT NULL,
@@ -176,6 +218,10 @@ CREATE TABLE request_status_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Every status change ever made on a rescue request';
 
+-- ─────────────────────────────────────────────
+-- Table 10: resource_types
+-- Categories of physical resources (boat, truck, etc.).
+-- ─────────────────────────────────────────────
 CREATE TABLE resource_types (
     resource_type_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     type_name        VARCHAR(100) NOT NULL UNIQUE,
@@ -184,6 +230,10 @@ CREATE TABLE resource_types (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Categories of rescue resources';
 
+-- ─────────────────────────────────────────────
+-- Table 11: resources
+-- Individual resources and their current availability.
+-- ─────────────────────────────────────────────
 CREATE TABLE resources (
     resource_id      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     resource_name    VARCHAR(100) NOT NULL,
@@ -205,6 +255,10 @@ CREATE TABLE resources (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Individual rescue resources (boats, trucks, medical teams, etc.)';
 
+-- ─────────────────────────────────────────────
+-- Table 12: allocations
+-- Tracks which resource was assigned to which request.
+-- ─────────────────────────────────────────────
 CREATE TABLE allocations (
     allocation_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     request_id    INT UNSIGNED NOT NULL,
@@ -223,6 +277,10 @@ CREATE TABLE allocations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Resource-to-request assignments; active allocations prevent double booking';
 
+-- ─────────────────────────────────────────────
+-- Table 13: resource_status_history
+-- Records every availability change for a resource.
+-- ─────────────────────────────────────────────
 CREATE TABLE resource_status_history (
     history_id  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     resource_id INT UNSIGNED NOT NULL,
@@ -237,7 +295,10 @@ CREATE TABLE resource_status_history (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Full history of resource status changes';
 
-
+-- ─────────────────────────────────────────────
+-- Table 14: scheduling_runs
+-- Records each execution of a scheduling algorithm.
+-- ─────────────────────────────────────────────
 CREATE TABLE scheduling_runs (
     run_id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     algorithm    ENUM('FCFS','SJF','RR','PRIORITY') NOT NULL,
@@ -251,6 +312,9 @@ CREATE TABLE scheduling_runs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Each run of a scheduling algorithm; stores which algorithm, when, by whom';
 
+-- ─────────────────────────────────────────────
+-- Table 15: scheduling_log
+-- Per-request results for each scheduling run.
 -- ─────────────────────────────────────────────
 CREATE TABLE scheduling_log (
     log_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -269,6 +333,10 @@ CREATE TABLE scheduling_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Per-request scheduling results: waiting time, turnaround, response time';
 
+-- ─────────────────────────────────────────────
+-- Table 16: audit_log
+-- Immutable record of all important system actions.
+-- ─────────────────────────────────────────────
 CREATE TABLE audit_log (
     audit_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id     INT UNSIGNED DEFAULT NULL,
@@ -283,6 +351,10 @@ CREATE TABLE audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='System-wide audit trail; records who did what and when';
 
+-- ─────────────────────────────────────────────
+-- Table 17: deadlock_events
+-- Records simulated RAG cycle detections and resolutions.
+-- ─────────────────────────────────────────────
 CREATE TABLE deadlock_events (
     event_id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     detected_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -293,9 +365,20 @@ CREATE TABLE deadlock_events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='Simulated deadlock events detected by RAG DFS; distinct from MySQL deadlocks';
 
+-- ═══════════════════════════════════════════════════════════════
+-- VIEWS
+-- A view is a saved SELECT query. You query it like a table.
+-- These views give simple, readable summaries of the data.
+-- ═══════════════════════════════════════════════════════════════
 
-
-
+-- ─────────────────────────────────────────────────────────────
+-- View 1: pending_rescue_requests
+-- Shows every rescue request that is still being handled.
+-- Joins rescue_requests with disasters, localities, zones,
+-- cities, and assistance_types to show readable names
+-- instead of just foreign-key numbers.
+-- The WHERE clause keeps only requests in an active state.
+-- ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW pending_rescue_requests AS
 SELECT
     rr.request_id,
@@ -311,14 +394,19 @@ SELECT
     z.zone_name,
     at2.type_name AS assistance_type
 FROM rescue_requests rr
-JOIN disasters        d   ON d.disaster_id         = rr.disaster_id
-JOIN localities       l   ON l.locality_id          = rr.locality_id
-JOIN zones            z   ON z.zone_id              = rr.zone_id
-JOIN cities           c   ON c.city_id              = z.city_id
-JOIN assistance_types at2 ON at2.assistance_type_id = rr.assistance_type_id
-WHERE rr.status IN ('Submitted','New','Ready','Scheduled','Deferred');
+JOIN disasters        d   ON rr.disaster_id        = d.disaster_id
+JOIN localities       l   ON rr.locality_id        = l.locality_id
+JOIN zones            z   ON rr.zone_id            = z.zone_id
+JOIN cities           c   ON z.city_id             = c.city_id
+JOIN assistance_types at2 ON rr.assistance_type_id = at2.assistance_type_id
+WHERE rr.status IN ('Submitted', 'New', 'Ready', 'Scheduled', 'Deferred');
 
--- Shows all resources currently available for deployment
+-- ─────────────────────────────────────────────────────────────
+-- View 2: available_resources_summary
+-- Shows every resource that currently has status 'Available'.
+-- Joins with resource_types, zones, and cities so you see
+-- the type name, zone name, and city name instead of IDs.
+-- ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW available_resources_summary AS
 SELECT
     r.resource_id,
@@ -329,13 +417,18 @@ SELECT
     r.capacity,
     r.capacity_unit,
     r.status
-FROM resources    r
-JOIN resource_types rt ON rt.resource_type_id = r.resource_type_id
-JOIN zones          z  ON z.zone_id           = r.zone_id
-JOIN cities         c  ON c.city_id           = z.city_id
+FROM resources     r
+JOIN resource_types rt ON r.resource_type_id = rt.resource_type_id
+JOIN zones          z  ON r.zone_id          = z.zone_id
+JOIN cities         c  ON z.city_id          = c.city_id
 WHERE r.status = 'Available';
 
--- Shows all allocations with request and resource details
+-- ─────────────────────────────────────────────────────────────
+-- View 3: allocation_details
+-- Shows every resource allocation alongside the request and
+-- resource it relates to. LEFT JOIN on users so rows still
+-- appear even when no staff member is recorded (public ops).
+-- ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW allocation_details AS
 SELECT
     a.allocation_id,
@@ -348,12 +441,19 @@ SELECT
     a.released_at,
     a.status      AS allocation_status
 FROM allocations     a
-JOIN rescue_requests rr ON rr.request_id       = a.request_id
-JOIN resources        r ON r.resource_id        = a.resource_id
-JOIN resource_types  rt ON rt.resource_type_id  = r.resource_type_id
-LEFT JOIN users       u ON u.user_id            = a.allocated_by;
+JOIN rescue_requests rr ON a.request_id       = rr.request_id
+JOIN resources        r ON a.resource_id      = r.resource_id
+JOIN resource_types  rt ON r.resource_type_id = rt.resource_type_id
+LEFT JOIN users       u ON a.allocated_by     = u.user_id;
 
--- Aggregates scheduling performance metrics per run
+-- ─────────────────────────────────────────────────────────────
+-- View 4: scheduling_performance_summary
+-- Summarises the results of each scheduling run.
+-- LEFT JOIN on scheduling_log lets the view still return a
+-- row for a run that has not yet produced any log entries.
+-- COUNT, AVG aggregate the per-request scheduling metrics
+-- into one summary row per run.
+-- ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW scheduling_performance_summary AS
 SELECT
     sr.run_id,
@@ -367,9 +467,16 @@ SELECT
     sr.finished_at
 FROM scheduling_runs sr
 LEFT JOIN scheduling_log sl ON sl.run_id = sr.run_id
-GROUP BY sr.run_id;
+GROUP BY sr.run_id, sr.algorithm, sr.time_quantum,
+         sr.started_at, sr.finished_at;
 
--- Shows all audit entries with actor username resolved
+-- ─────────────────────────────────────────────────────────────
+-- View 5: audit_activity_report
+-- Shows every audit_log entry with the username resolved.
+-- LEFT JOIN on users so system-generated entries (user_id IS
+-- NULL) still appear, with COALESCE replacing NULL with the
+-- word 'system'.
+-- ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW audit_activity_report AS
 SELECT
     al.audit_id,
@@ -380,5 +487,4 @@ SELECT
     al.action_time,
     al.details
 FROM audit_log al
-LEFT JOIN users u ON u.user_id = al.user_id
-ORDER BY al.action_time DESC;
+LEFT JOIN users u ON al.user_id = u.user_id;
