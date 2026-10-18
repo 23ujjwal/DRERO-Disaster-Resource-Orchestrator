@@ -1,28 +1,6 @@
--- ============================================================
--- DRERO — schema_routines.sql
--- Triggers, Stored Functions, Stored Procedures, MySQL Roles.
---
--- HOW TO RUN (Windows MySQL, run as root or admin user):
---
---   Step 1 (run ONCE as root in Windows MySQL Workbench or cmd):
---     SET GLOBAL log_bin_trust_function_creators = 1;
---
---   Step 2 (run this file):
---     SOURCE /path/to/schema_routines.sql;
---   or:
---     mysql -u root -p drero_db < schema_routines.sql
---
--- WHY: MySQL requires SUPER privilege or log_bin_trust_function_creators=1
---      to create stored routines/triggers when binary logging is enabled.
--- ============================================================
-
 USE drero_db;
 
--- ============================================================
--- TRIGGERS — automatic actions on table events
--- ============================================================
 
--- Automatically records every rescue request status change in history
 DROP TRIGGER IF EXISTS record_request_status_change;
 DELIMITER $$
 CREATE TRIGGER record_request_status_change
@@ -39,7 +17,7 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Automatically records every resource availability change in history
+
 DROP TRIGGER IF EXISTS record_resource_status_change;
 DELIMITER $$
 CREATE TRIGGER record_resource_status_change
@@ -82,14 +60,11 @@ BEGIN
 END$$
 DELIMITER ;
 
--- ============================================================
--- MySQL ROLES — role-based access control (DCL)
--- ============================================================
 CREATE ROLE IF NOT EXISTS 'disaster_dispatcher';
 CREATE ROLE IF NOT EXISTS 'zone_administrator';
 CREATE ROLE IF NOT EXISTS 'system_auditor';
 
--- Dispatcher: manage requests, allocations, run scheduling, view resources
+
 GRANT SELECT, INSERT, UPDATE ON drero_db.rescue_requests   TO 'disaster_dispatcher';
 GRANT SELECT, INSERT, UPDATE ON drero_db.allocations       TO 'disaster_dispatcher';
 GRANT SELECT, INSERT         ON drero_db.scheduling_runs   TO 'disaster_dispatcher';
@@ -97,20 +72,14 @@ GRANT SELECT, INSERT         ON drero_db.scheduling_log    TO 'disaster_dispatch
 GRANT SELECT                 ON drero_db.resources         TO 'disaster_dispatcher';
 GRANT SELECT                 ON drero_db.audit_log         TO 'disaster_dispatcher';
 
--- Zone Admin: manage resources and zones in their area
 GRANT SELECT, INSERT, UPDATE ON drero_db.resources         TO 'zone_administrator';
 GRANT SELECT, INSERT, UPDATE ON drero_db.zones             TO 'zone_administrator';
 GRANT SELECT                 ON drero_db.rescue_requests   TO 'zone_administrator';
 GRANT SELECT                 ON drero_db.allocations       TO 'zone_administrator';
 
--- Auditor: read-only access to everything
+
 GRANT SELECT                 ON drero_db.*                 TO 'system_auditor';
 
--- ============================================================
--- STORED FUNCTIONS — reusable calculations
--- ============================================================
-
--- Returns the severity level for a given disaster and zone combination
 DROP FUNCTION IF EXISTS get_severity_for_zone;
 DELIMITER $$
 CREATE FUNCTION get_severity_for_zone(
@@ -132,9 +101,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Calculates estimated processing time for a rescue request (OS simulation)
--- Formula mirrors C++ pcb_service_time(): people*0.5 + severity*2.0 units
--- 1 unit = 10 simulated minutes
 DROP FUNCTION IF EXISTS calculate_request_service_time;
 DELIMITER $$
 CREATE FUNCTION calculate_request_service_time(
@@ -151,7 +117,7 @@ BEGIN
 END$$
 DELIMITER ;
 
--- Calculates scheduling priority score (mirrors C++ pcb_priority_score())
+
 DROP FUNCTION IF EXISTS calculate_priority_score;
 DELIMITER $$
 CREATE FUNCTION calculate_priority_score(
@@ -173,11 +139,6 @@ BEGIN
 END$$
 DELIMITER ;
 
--- ============================================================
--- STORED PROCEDURES — complex multi-step operations
--- ============================================================
-
--- Submits a new rescue request with full transaction safety
 DROP PROCEDURE IF EXISTS submit_rescue_request;
 DELIMITER $$
 CREATE PROCEDURE submit_rescue_request(
