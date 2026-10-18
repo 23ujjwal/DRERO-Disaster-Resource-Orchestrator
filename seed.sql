@@ -3,7 +3,7 @@
 -- All passwords: Demo@1234 (stored plain for academic demo — documented).
 -- All data is SIMULATED for academic demonstration only.
 
-SET FOREIGN_KEY_CHECKS = 0; --system software was used when noo one was ever usi 
+SET FOREIGN_KEY_CHECKS = 0; --system software was used when noo one was ever us 
 
 -- ─── cities (10) ─────────────────────────────────────────────
 INSERT IGNORE INTO cities (city_id, city_name, state_name, country, is_active) VALUES
