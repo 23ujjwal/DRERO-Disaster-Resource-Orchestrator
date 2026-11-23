@@ -1,0 +1,2 @@
+SHOW VARIABLES LIKE 'log_bin_trust_function_creators';
+SHOW VARIABLES LIKE 'log_bin';
